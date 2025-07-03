@@ -16,7 +16,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 interface HeaderProps {
   title?: string;
 }
-
+import logo from '../assets/logo.png';
 const Header: React.FC<HeaderProps> = ({ title = "Bluepill" }) => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ title = "Bluepill" }) => {
             aria-label="Go to home page"
           >
             <div className="h-logo">
-              <img src="../assets/logo.png" alt="Bluepill Logo" className="h-14" />
+              <img src={logo} alt="Bluepill Logo" className="h-14" />
             </div>
           </div>
         </div>
