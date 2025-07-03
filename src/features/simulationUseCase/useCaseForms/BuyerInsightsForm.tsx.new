@@ -1,0 +1,205 @@
+// filepath: c:\Users\Puneet Bajaj\Desktop\Ankit\ankitnewform\src\features\simulationUseCase\useCaseForms\BuyerInsightsForm.tsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../../components/Button';
+import { User, Info, Globe, ArrowLeft } from 'lucide-react';
+import { useAudience } from '../../../context/AudienceContext';
+
+interface BuyerInsightsFormProps {
+  onSubmit: () => void;
+  selectedSegmentIds: number[];
+  onBack: () => void;
+}
+
+interface Segment {
+  id: number;
+  name: string;
+  description: string;
+  len: number; // Number of personas
+  created_at: string;
+  updated_at: string;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+const BuyerInsightsForm: React.FC<BuyerInsightsFormProps> = ({ onSubmit, selectedSegmentIds, onBack }) => {
+  const navigate = useNavigate();
+  const { audienceData } = useAudience();
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [productName, setProductName] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [context, setContext] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => {
+    const fetchSegments = async () => {
+      if (!audienceData.audienceId) return;
+      
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/audience/${audienceData.audienceId}/segments`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch segments');
+        }
+        
+        const data = await response.json();
+        // Filter segments to only include the selected ones
+        const filteredSegments = data.filter((segment: Segment) => 
+          selectedSegmentIds.includes(segment.id)
+        );
+        setSegments(filteredSegments);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching segments:', err);
+        setError('Failed to load segments. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSegments();
+  }, [audienceData.audienceId, selectedSegmentIds]);
+  
+  const isFormValid = selectedSegmentIds.length > 0 && 
+                      productName.trim() !== '';
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!isFormValid || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare the simulation data
+      const simulationData = {
+        audience_id: audienceData.audienceId,
+        segment_ids: selectedSegmentIds,
+        task: 'buyer-insights-report',
+        objective: 'in-depth-buyer-insights-report',
+        context: context,
+        additional_data: {
+          product_name: productName,
+          website_url: websiteUrl
+        }
+      };
+      
+      // Send the request to start a simulation
+      const response = await fetch(`${API_URL}/simulations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(simulationData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to start simulation');
+      }
+      
+      const data = await response.json();
+      
+      // Move to the results page with the simulation ID
+      navigate(`/simulation-results/${data.simulation_id}`, { state: { simulationId: data.simulation_id } });
+      
+    } catch (err) {
+      console.error('Error starting simulation:', err);
+      setError('Failed to start simulation. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            icon={<ArrowLeft className="w-4 h-4 mr-1" />}
+          >
+            Back to use case selection
+          </Button>
+          <span className="text-sm text-gray-500">{selectedSegmentIds.length} segments selected</span>
+        </div>
+        
+        {loading ? (
+          <div className="flex justify-center items-center py-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-sm text-red-600 mb-3">
+            {error}
+          </div>
+        ) : (
+          <div className="p-3 bg-blue-50 rounded-md mb-4">
+            <p className="text-sm text-blue-800">Buyer insights report with {segments.length} selected segments</p>
+          </div>
+        )}
+      </div>
+      
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          What product, service, or company do you want insights on?
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <input
+              type="text"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Name"
+            />
+          </div>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Globe className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="Website link (optional)"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="mb-6">
+        <label htmlFor="context" className="block text-sm font-medium text-gray-700 mb-2">
+          Context (Optional)
+        </label>
+        <textarea
+          id="context"
+          rows={4}
+          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          placeholder="Add any additional details or specific areas you want insights on..."
+        />
+      </div>
+      
+      <div className="flex justify-end">
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={!isFormValid || isSubmitting}
+          withArrow
+        >
+          {isSubmitting ? 'Generating Report...' : 'Generate Buyer Insights Report'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default BuyerInsightsForm;

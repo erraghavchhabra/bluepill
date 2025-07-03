@@ -1,0 +1,348 @@
+// filepath: c:\Users\Puneet Bajaj\Desktop\Ankit\ankitnewform\src\features\simulationUseCase\UseCaseSelector.tsx
+import React, { useState, useEffect } from 'react';
+import { 
+  PenTool, 
+  TestTube, 
+  BarChart, 
+  DollarSign, 
+  Share2, 
+  Target,
+  ArrowLeft,
+  SearchCheck
+} from 'lucide-react';
+import StepContainer from '../../components/StepContainer';
+import SimulationCard from '../../components/SimulationCard';
+import Button from '../../components/Button';
+import ContentCreationForm from './useCaseForms/ContentCreationForm';
+import ContentTestingForm from './useCaseForms/ContentTestingForm';
+import InsightsForm from './useCaseForms/InsightsForm';
+import PricingForm from './useCaseForms/PricingForm';
+import ChannelStrategyForm from './useCaseForms/ABTestCreatives';
+import AttributionForm from './useCaseForms/AttributionForm';
+import BuyerInsightsForm from './useCaseForms/BuyerInsightsForm';
+import SegmentsSelector from './SegmentsSelector';
+import { useAudience } from '../../context/AudienceContext';
+import SimulationHistoryPanel from '../../components/SimulationHistoryPanel';
+import { useNavigate } from 'react-router-dom';
+
+// Interface to track persona filters within each segment
+export interface SegmentPersonaFilters {
+  industryL1: string[];
+  industryL2: string[];
+  functions: string[];
+  roles: string[];
+}
+
+export type UseCaseType = 
+  | 'create-content' 
+  | 'content-testing' 
+  | 'get-insights' 
+  | 'pricing-analysis' 
+  | 'channel-strategy' 
+  | 'attribution' 
+  | 'buyer-insights-report'
+  | null;
+
+// Define the possible steps in the flow
+type FlowStep = 'segment-selection' | 'use-case-selection' | 'form-filling';
+
+interface UseCaseSelectorProps {
+  onComplete: () => void;
+  onBack: () => void;
+  audienceId: number;
+  onStepChange?: (step: FlowStep) => void;
+  currentStep?: FlowStep;
+}
+
+const UseCaseSelector: React.FC<UseCaseSelectorProps> = ({ 
+  onComplete, 
+  onBack, 
+  audienceId,
+  onStepChange,
+  currentStep: providedStep 
+}) => {
+  const { audienceData, updateAudienceData } = useAudience();
+  const navigate = useNavigate();
+  
+  // Initialize with provided step or default to segment selection
+  const [localCurrentStep, setLocalCurrentStep] = useState<FlowStep>(
+    providedStep || 'segment-selection'
+  );
+  
+  // Use either the provided step from props or our local state
+  const currentStep = providedStep || localCurrentStep;
+
+  // Initialize from context if available
+  const [selectedUseCase, setSelectedUseCase] = useState<UseCaseType>(null);
+  const [selectedSegments, setSelectedSegments] = useState<number[]>(
+    audienceData.selectedSegments || []
+  );
+  const [personaFilters, setPersonaFilters] = useState<Record<number, SegmentPersonaFilters>>(
+    audienceData.personaFilters || {}
+  );
+  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
+
+  // Update local step and notify parent component
+  const setCurrentStep = (step: FlowStep) => {
+    console.log('Setting current step to:', step);
+    setLocalCurrentStep(step);
+    if (onStepChange) {
+      onStepChange(step);
+    }
+  };
+
+  // Keep in sync with prop changes
+  useEffect(() => {
+    if (providedStep && providedStep !== localCurrentStep) {
+      setLocalCurrentStep(providedStep);
+    }
+  }, [providedStep]);
+
+  // Handle simulation history selection
+  const handleSelectHistorySimulation = (simulationId: number) => {
+    navigate(`/simulation-results/${simulationId}`);
+    setIsHistoryPanelOpen(false);
+  };
+  
+  // Handle segment selection
+  const handleSegmentSelect = (segments: number[], filters: Record<number, SegmentPersonaFilters>) => {
+    console.log('Segment selection completed with segments:', segments);
+    setSelectedSegments(segments);
+    setPersonaFilters(filters);
+    
+    // Update audience context
+    updateAudienceData({
+      selectedSegments: segments,
+      personaFilters: filters
+    });
+    
+    // Move to use case selection step
+    setCurrentStep('use-case-selection');
+  };
+  
+  // Handle use case selection
+  const handleUseCaseSelect = (useCase: UseCaseType) => {
+    setSelectedUseCase(useCase);
+    
+    // Update context with selected use case
+    if (useCase) {
+      const useCaseTitle = useCases.find(uc => uc.type === useCase)?.title || '';
+      updateAudienceData({ selectedUseCase: useCaseTitle });
+    }
+    
+    // Move to form filling step
+    setCurrentStep('form-filling');
+  };
+  
+  // Handle navigation back from use case to segments
+  const handleBackFromUseCase = () => {
+    setCurrentStep('segment-selection');
+  };
+  
+  // Handle navigation back from form to use case selection
+  const handleBackFromForm = () => {
+    setCurrentStep('use-case-selection');
+  };
+  
+  // Define available use cases
+  const useCases = [
+    {
+      type: 'create-content' as UseCaseType,
+      icon: <PenTool className="w-5 h-5" />,
+      title: 'Create Content',
+      description: 'Generate content, messages, ads, emails and more tailored to your audience',
+    },
+    {
+      type: 'content-testing' as UseCaseType,
+      icon: <TestTube className="w-5 h-5" />,
+      title: 'Test Content',
+      description: 'Run A/B or multivariate tests on any content, creatives and more',
+    },
+    {
+      type: 'get-insights' as UseCaseType,
+      icon: <BarChart className="w-5 h-5" />,
+      title: 'Get Insights',
+      description: 'Simulate a survey or focus group to get insights',
+    },
+    {
+      type: 'pricing-analysis' as UseCaseType,
+      icon: <DollarSign className="w-5 h-5" />,
+      title: 'Pricing Analysis',
+      description: 'Test how price points perform across different segments',
+    },
+    {
+      type: 'channel-strategy' as UseCaseType,
+      icon: <Share2 className="w-5 h-5" />,
+      title: 'A/B Test Creatives',
+      description: 'Discover the best way to reach this audience with detailed execution plan',
+    },
+    {
+      type: 'attribution' as UseCaseType,
+      icon: <Target className="w-5 h-5" />,
+      title: 'Attribution',
+      description: 'Learn what drives or blocks conversions',
+    },
+    {
+      type: 'buyer-insights-report' as UseCaseType,
+      icon: <SearchCheck className="w-5 h-5" />,
+      title: 'Buyer Insights Report',
+      description: 'Generate a detailed report on buyer insights',
+    },
+  ];
+  
+  // Render the appropriate form component based on selected use case
+  const renderUseCaseForm = () => {
+    switch (selectedUseCase) {
+      case 'create-content':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <ContentCreationForm 
+              onSubmit={onComplete} 
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'content-testing':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <ContentTestingForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'get-insights':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <InsightsForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'pricing-analysis':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <PricingForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'channel-strategy':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <ChannelStrategyForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'attribution':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <AttributionForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      case 'buyer-insights-report':
+        return (
+          <div className="mx-auto w-[80vw] max-w-4xl">
+            <BuyerInsightsForm 
+              onSubmit={onComplete}
+              selectedSegmentIds={selectedSegments}
+              personaFilters={personaFilters}
+              onBack={handleBackFromForm}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+  
+  // Render the appropriate step component
+  const renderStep = () => {
+    console.log('Rendering step:', currentStep);
+    
+    switch (currentStep) {
+      case 'segment-selection':
+        return (
+          <SegmentsSelector
+            audienceId={audienceId}
+            onBack={onBack}
+            onNext={handleSegmentSelect}
+          />
+        );
+      case 'use-case-selection':
+        return (
+          <StepContainer
+            title="What would you like to do today?"
+            subtitle={`Pick a use case to get started with ${audienceData.audienceName || 'your selected audience'}.`}
+            className="animate-fadeIn"
+          >
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackFromUseCase}
+                icon={<ArrowLeft className="w-4 h-4 mr-1" />}
+              >
+                Back to segment selection
+              </Button>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              {useCases.map((useCase) => (
+                <SimulationCard
+                  key={useCase.type}
+                  icon={useCase.icon}
+                  title={useCase.title}
+                  description={useCase.description}
+                  onClick={() => handleUseCaseSelect(useCase.type)}
+                />
+              ))}
+            </div>
+          </StepContainer>
+        );
+      case 'form-filling':
+        return renderUseCaseForm();
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <>
+      {renderStep()}
+      
+      <SimulationHistoryPanel 
+        isOpen={isHistoryPanelOpen}
+        onClose={() => setIsHistoryPanelOpen(false)}
+        onSelectSimulation={handleSelectHistorySimulation}
+      />
+      {isHistoryPanelOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-30 z-20"
+          onClick={() => setIsHistoryPanelOpen(false)} 
+        />
+      )}
+    </>
+  );
+};
+
+export default UseCaseSelector;
