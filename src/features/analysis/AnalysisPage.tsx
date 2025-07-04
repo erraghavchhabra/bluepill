@@ -12,6 +12,7 @@ import {
 import Layout from "../../components/Layout";
 import SimulationResultsContent from "../simulationResults/SimulationResultsContent";
 import { format } from "date-fns";
+import SimImg from "../../assets/sim-img.png";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -114,7 +115,7 @@ const AnalysisPage: React.FC = () => {
   );
 
   const renderSimulationsList = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col sticky top-24 left-0">
       <div className="flex justify-between items-center p-4 ">
         <h3
           className={`text-xl font-semibold ${
@@ -164,7 +165,7 @@ const AnalysisPage: React.FC = () => {
                 onClick={() =>
                   setIsAudienceDropdownOpen(!isAudienceDropdownOpen)
                 }
-                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50"
+                className="w-full flex items-center justify-between h-[50px]  rounded-[12px] px-3 py-2 text-sm  bg-gray-100 hover:bg-gray-50"
               >
                 <span>
                   {selectedAudienceId
@@ -193,7 +194,7 @@ const AnalysisPage: React.FC = () => {
                         setSelectedAudienceId(audience.id);
                         setIsAudienceDropdownOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      className="w-full text-left  px-4 py-2 text-sm hover:bg-gray-100"
                     >
                       {audience.name}
                     </button>
@@ -208,9 +209,9 @@ const AnalysisPage: React.FC = () => {
                 placeholder="Search simulations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-2 h-[50px]  rounded-[12px] pl-10 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3  top-1/2 transform -translate-y-1/2 h-5 w-5 text-black-400" />
             </div>
           </div>
 
@@ -221,7 +222,7 @@ const AnalysisPage: React.FC = () => {
                 <p>No simulations found</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-auto scrollbar-hide">
                 {filteredSimulations.map((simulation) => (
                   <button
                     type="button"
@@ -233,7 +234,13 @@ const AnalysisPage: React.FC = () => {
                         : "border-gray-200"
                     }`}
                   >
-                    <div className="bg-gray-200  sim-btn-top rounded">
+                    <div
+                      className={`${
+                        urlSimId === simulation.id.toString()
+                          ? "bg-primary"
+                          : "bg-[#E8E8E8]"
+                      }  sim-btn-top rounded`}
+                    >
                       <span>{simulation.audience_name}</span>
                     </div>
                     <div className="bg-white border sim-btn-bottom border-gray-200">
@@ -251,7 +258,7 @@ const AnalysisPage: React.FC = () => {
                         <div className="flex items-center justify-between pt-4 pb-1 bg-white w-full max-w-md">
                           {/* Date */}
                           <div className="flex items-center gap-2">
-                            <CalendarDays className="text-cyan-400 w-5 h-5" />
+                            <CalendarDays className="text-primary w-5 h-5" />
                             <span className="text-black font-medium">
                               {format(
                                 new Date(simulation?.created_at),
@@ -262,7 +269,7 @@ const AnalysisPage: React.FC = () => {
 
                           {/* Time */}
                           <div className="flex items-center gap-2">
-                            <AlarmClock className="text-cyan-400 w-5 h-5" />
+                            <AlarmClock className="text-primary w-5 h-5" />
                             <span className="text-black font-medium">
                               {format(
                                 new Date(simulation?.created_at),
@@ -286,9 +293,9 @@ const AnalysisPage: React.FC = () => {
 
   const renderNoSimulationSelectedState = () => (
     <div className="flex flex-col items-center m-main-content justify-center h-full text-gray-500">
-      <BarChart2 className="h-16 w-16 mb-4 opacity-30" />
-      <p className="text-xl font-medium mb-2">Select a simulation</p>
-      <p>Choose a simulation from the list to view its analysis</p>
+      <img src={SimImg} alt=""  />
+      <p style={{ color: "hsl(174, 97.2%, 27.6%)" }} className="text-[28px] mt-4 font-semibold mb-2">Select a simulation</p>
+      <p className="text-black text-[14px]  font-medium">Choose a simulation from the list to view its analysis</p>
     </div>
   );
 
@@ -313,13 +320,13 @@ const AnalysisPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex h-[calc(100vh-4rem)] bg-white">
+      <div className="flex relative bg-white">
         {" "}
         {/* adjust height if needed */}
         <div
           className={` p-3
             transition-all duration-300 ease-in-out
-            bg-white  overflow-hidden
+            bg-white 
             ${isSidebarVisible ? "min-w-96 w-full max-w-96" : "w-[70px]"}
           `}
         >
@@ -327,7 +334,7 @@ const AnalysisPage: React.FC = () => {
             ? renderLoadingAnimation()
             : renderSimulationsList()}
         </div>
-        <div className="bg-[#FAFAFA] rounded-tl-[30px] overflow-hidden p-[30px] w-full">
+        <div className="bg-[#FAFAFA] rounded-tl-[30px] p-[30px] w-full">
           {urlSimId ? (
             <SimulationResultsContent
               simulationId={urlSimId}
